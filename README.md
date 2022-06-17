@@ -53,9 +53,7 @@ degit uchihamalolan/vite-react-ts your-app-name
 ---
 
 ### Styling
-- TailwindCSS v3
 
----
 
 # Other Recommended Libraries:
 
