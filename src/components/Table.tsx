@@ -132,17 +132,30 @@ export function Table({ columns, dataSource }: TableProps) {
     const [k, v] = sortOn;
 
     if (k === key) {
-      let newValue: boolean | undefined;
-
-      if (v !== false) {
-        newValue = !v;
+      switch (v) {
+        case true:
+          return setSortOn([key, false]);
+        case false:
+          return setSortOn(['', undefined]);
       }
-
-      setSortOn([key, newValue]);
-    } else {
-      setSortOn([key, true]);
     }
+
+    return setSortOn([key, true]);
   };
+  const sortFn = sortOn[0]
+    ? columns.find(({ sort, key }) => sortOn[0] === key && sort)?.sort
+    : undefined;
+  const reverseSort = sortOn[1] === false;
+  const sortedDataSource = [...dataSource];
+
+  // Do Sorting (sort/reverse mutate)
+  if (sortFn) {
+    sortedDataSource.sort(sortFn);
+
+    if (reverseSort) {
+      sortedDataSource.reverse();
+    }
+  }
 
   return (
     <table className={styles.table}>
@@ -154,7 +167,10 @@ export function Table({ columns, dataSource }: TableProps) {
               key={key}
             >
               {sort ? (
-                <HeaderButton dir={sortOn[0] === key && sortOn[1]} onClick={() => setSortKey(key)}>
+                <HeaderButton
+                  dir={sortOn[0] === key ? sortOn[1] : undefined}
+                  onClick={() => setSortKey(key)}
+                >
                   {label}
                 </HeaderButton>
               ) : (
@@ -165,7 +181,7 @@ export function Table({ columns, dataSource }: TableProps) {
         </tr>
       </thead>
       <tbody>
-        {dataSource.map(({ key, ...rest }) => (
+        {sortedDataSource.map(({ key, ...rest }) => (
           <tr key={key}>
             {Object.entries(rest).map(([k, val]) => (
               <td key={k} className={styles.td}>
