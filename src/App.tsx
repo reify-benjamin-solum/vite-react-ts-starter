@@ -3,6 +3,25 @@ import { Header } from 'components/Header';
 import { Table } from 'components/Table';
 import { ReactComponent as Logo } from 'assets/favicon.svg';
 
+
+
+const columns = [
+  {
+    label: 'Name',
+    key: 'name',
+    fixed: true,
+  },
+  {
+    label: 'Age',
+    key: 'age',
+    sort: (a: { age: number }, b: { age: number }) => a.age - b.age,
+  },
+  {
+    label: 'Address',
+    key: 'address',
+  },
+];
+
 const dataSource = [
   {
     key: '1',
@@ -14,23 +33,7 @@ const dataSource = [
     key: '2',
     name: 'John',
     age: 42,
-    address: '10 Downing Street',
-  },
-];
-
-const columns = [
-  {
-    label: 'Name',
-    key: 'name',
-  },
-  {
-    label: 'Age',
-    key: 'age',
-    sort: (a, b) => a.age - b.age,
-  },
-  {
-    label: 'Address',
-    key: 'address',
+    address: <div style={{ width: '50vw' }}>1000000 Downing Street</div>,
   },
 ];
 

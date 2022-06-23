@@ -4,17 +4,26 @@ import { cx } from '@linaria/core';
 import { css } from '@linaria/atomic';
 
 const styles = {
+  container: css`
+    --scroll-position: 0;
+    --scroll-position-unit: calc(var(--scroll-position) * 1px);
+
+    overflow-x: auto;
+    width: 100%;
+  `,
   table: css`
     --border-width: 1px;
     --border-color: rgba(0, 0, 0, 0.06);
     --padding: 1em;
+    --heading-bg: #fafafa;
+    --cell-bg: #fff;
 
     border-collapse: border;
     table-layout: fixed;
     width: 100%;
   `,
   th: css`
-    background: #fafafa;
+    background: var(--heading-bg);
     border-bottom: var(--border-width) solid var(--border-color);
     font-weight: 500;
     padding: var(--padding);
@@ -22,7 +31,7 @@ const styles = {
     text-transform: none;
     transition: background 0.3s ease;
 
-    &::after {
+    &::before {
       background: var(--border-color);
       content: '';
       height: 1.6em;
@@ -37,7 +46,26 @@ const styles = {
   `,
   'th-sticky': css`
     left: 0;
-    position: fixed;
+    position: sticky;
+    z-index: 1;
+  `,
+  'th-sticky-pseudos': css`
+    &::before {
+      width: calc(var(--border-width) - var(--scroll-position-unit));
+    }
+
+    &::after {
+      --w: min(10px, var(--scroll-position-unit));
+
+      box-shadow: inset var(--w) 0 8px -8px #00000026;
+      content: '';
+      height: 100%;
+      position: absolute;
+      right: 0;
+      top: 0;
+      transform: translateX(100%);
+      width: 1em;
+    }
   `,
   'th-btn': css`
     padding: 0;
@@ -46,11 +74,44 @@ const styles = {
     background: rgba(0, 0, 0, 0.04);
   `,
   td: css`
+    background: var(--cell-bg);
     border-bottom: var(--border-width) solid var(--border-color);
     padding: var(--padding);
   `,
   'td-sorted': css`
-    background: #fafafa;
+    background: var(--heading-bg);
+  `,
+  'td-sticky': css`
+    left: 0;
+    position: sticky;
+    z-index: 1;
+
+    &::after {
+      --w: min(10px, var(--scroll-position-unit));
+
+      box-shadow: inset var(--w) 0 8px -8px #00000026;
+      content: '';
+      height: 100%;
+      position: absolute;
+      right: 0;
+      top: 0;
+      transform: translateX(100%);
+      width: 1em;
+    }
+  `,
+  'td-sticky-pseudos': css`
+    &::after {
+      --w: min(10px, var(--scroll-position-unit));
+
+      box-shadow: inset var(--w) 0 8px -8px #00000026;
+      content: '';
+      height: 100%;
+      position: absolute;
+      right: 0;
+      top: 0;
+      transform: translateX(100%);
+      width: 1em;
+    }
   `,
   button: css`
     background: none;
@@ -123,7 +184,7 @@ interface TableColumn {
 
 interface TableDataSource {
   key: Key;
-  [x: string]: string | number;
+  [x: string]: any;
 }
 
 interface TableProps {
@@ -132,12 +193,11 @@ interface TableProps {
 }
 
 export function Table({ columns, dataSource }: TableProps) {
-  const [sortOn, setSortOn] = useState<[Key, boolean | undefined]>(['', undefined]);
+  const [[sortKey, sortDir], setSortOn] = useState<[Key, boolean | undefined]>(['', undefined]);
+  const [scrollLeft, setScrollLeft] = useState(0);
   const setSortKey = (key: Key) => {
-    const [k, v] = sortOn;
-
-    if (k === key) {
-      switch (v) {
+    if (sortKey === key) {
+      switch (sortDir) {
         case true:
           return setSortOn([key, false]);
         case false:
@@ -147,60 +207,82 @@ export function Table({ columns, dataSource }: TableProps) {
 
     return setSortOn([key, true]);
   };
-  const sortFn = sortOn[0]
-    ? columns.find(({ sort, key }) => sortOn[0] === key && sort)?.sort
+  const sortFn = sortKey
+    ? columns.find(({ sort, key }) => sortKey === key && sort)?.sort
     : undefined;
-  const reverseSort = sortOn[1] === false;
   const sortedDataSource = [...dataSource];
 
-  // Do Sorting (sort/reverse mutate)
+  // Do Sorting
   if (sortFn) {
     sortedDataSource.sort(sortFn);
 
-    if (reverseSort) {
+    // Reverse sort
+    if (sortDir === false) {
       sortedDataSource.reverse();
     }
   }
 
   return (
-    <table className={styles.table}>
-      <thead>
-        <tr>
-          {columns.map(({ key, label, fixed, sort }) => (
-            <th
-              className={cx(
-                styles.th,
-                fixed && styles['th-sticky'],
-                sort && styles['th-btn'],
-                key === sortOn[0] && styles['th-sorted']
-              )}
-              key={key}
-            >
-              {sort ? (
-                <HeaderButton
-                  dir={sortOn[0] === key ? sortOn[1] : undefined}
-                  onClick={() => setSortKey(key)}
-                >
-                  {label}
-                </HeaderButton>
-              ) : (
-                <>{label}</>
-              )}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {sortedDataSource.map(({ key, ...rest }) => (
-          <tr key={key}>
-            {Object.entries(rest).map(([k, val]) => (
-              <td key={k} className={cx(styles.td, k === sortOn[0] && styles['td-sorted'])}>
-                {val}
-              </td>
+    <div
+      className={styles.container}
+      style={{ '--scroll-position': scrollLeft } as any}
+      onScroll={(evt: React.UIEvent<HTMLElement>) =>
+        setScrollLeft((evt.target as HTMLDivElement).scrollLeft)
+      }
+    >
+      <table className={styles.table}>
+        <thead>
+          <tr>
+            {columns.map(({ key, label, fixed, sort }, i, arr) => (
+              <th
+                key={key}
+                className={cx(
+                  styles.th,
+                  fixed && styles['th-sticky'],
+                  fixed && !arr[i + 1]?.fixed && styles['th-sticky-pseudos'],
+                  sort && styles['th-btn'],
+                  key === sortKey && styles['th-sorted']
+                )}
+              >
+                {sort ? (
+                  <HeaderButton
+                    dir={sortKey === key ? sortDir : undefined}
+                    onClick={() => setSortKey(key)}
+                  >
+                    {label}
+                  </HeaderButton>
+                ) : (
+                  <>{label}</>
+                )}
+              </th>
             ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {sortedDataSource.map(({ key, ...rest }) => (
+            <tr key={key}>
+              {Object.entries(rest).map(([k, val]) => {
+                const colIndex = columns.findIndex(({ key }) => k === key);
+                const col = columns[colIndex]!;
+
+                return (
+                  <td
+                    key={k}
+                    className={cx(
+                      styles.td,
+                      k === sortKey && styles['td-sorted'],
+                      col.fixed && styles['td-sticky'],
+                      col.fixed && !columns[colIndex + 1] && styles['td-sticky-pseudos']
+                    )}
+                  >
+                    {val}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
