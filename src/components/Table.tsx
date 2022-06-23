@@ -42,9 +42,15 @@ const styles = {
   'th-btn': css`
     padding: 0;
   `,
+  'th-sorted': css`
+    background: rgba(0, 0, 0, 0.04);
+  `,
   td: css`
     border-bottom: var(--border-width) solid var(--border-color);
     padding: var(--padding);
+  `,
+  'td-sorted': css`
+    background: #fafafa;
   `,
   button: css`
     background: none;
@@ -59,8 +65,7 @@ const styles = {
     transition: inherit;
     width: 100%;
 
-    &:hover,
-    &:focus {
+    &:hover {
       background: rgba(0, 0, 0, 0.04);
     }
   `,
@@ -163,7 +168,12 @@ export function Table({ columns, dataSource }: TableProps) {
         <tr>
           {columns.map(({ key, label, fixed, sort }) => (
             <th
-              className={cx(styles.th, fixed && styles['th-sticky'], sort && styles['th-btn'])}
+              className={cx(
+                styles.th,
+                fixed && styles['th-sticky'],
+                sort && styles['th-btn'],
+                key === sortOn[0] && styles['th-sorted']
+              )}
               key={key}
             >
               {sort ? (
@@ -184,7 +194,7 @@ export function Table({ columns, dataSource }: TableProps) {
         {sortedDataSource.map(({ key, ...rest }) => (
           <tr key={key}>
             {Object.entries(rest).map(([k, val]) => (
-              <td key={k} className={styles.td}>
+              <td key={k} className={cx(styles.td, k === sortOn[0] && styles['td-sorted'])}>
                 {val}
               </td>
             ))}
