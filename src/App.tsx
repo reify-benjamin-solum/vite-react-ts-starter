@@ -14,6 +14,7 @@ const columns = [
   {
     label: 'Age',
     key: 'age',
+    fixed: true,
     sort: (a: { age: number }, b: { age: number }) => a.age - b.age,
   },
   {

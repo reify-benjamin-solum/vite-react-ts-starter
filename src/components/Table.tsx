@@ -222,6 +222,8 @@ export function Table({ columns, dataSource }: TableProps) {
     }
   }
 
+  console.log('NEED Resize Observer for second sticky column');
+
   return (
     <div
       className={styles.container}
@@ -272,7 +274,7 @@ export function Table({ columns, dataSource }: TableProps) {
                       styles.td,
                       k === sortKey && styles['td-sorted'],
                       col.fixed && styles['td-sticky'],
-                      col.fixed && !columns[colIndex + 1] && styles['td-sticky-pseudos']
+                      col.fixed && !columns[colIndex + 1]?.fixed && styles['td-sticky-pseudos']
                     )}
                   >
                     {val}
